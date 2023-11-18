@@ -1,0 +1,8 @@
+POST http://localhost:3001/v1/feed-data
+
+GET http://localhost:3001/v1/feeder-status
+
+GET http://localhost:3001/v1/stock-list
+
+GET http://localhost:3001/v1/stock-summary?stock=GGRM&day_date=2022-11-10
+

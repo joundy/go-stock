@@ -1,0 +1,63 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:7.0.8-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    networks:
+      - stock-net
+
+  redpanda:
+    image: docker.redpanda.com/vectorized/redpanda:v23.1.18
+    command:
+      - redpanda
+      - start
+      - --smp
+      - "1"
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --pandaproxy-addr
+      - PLAINTEXT://0.0.0.0:28082,OUTSIDE://0.0.0.0:8082
+      - --advertise-pandaproxy-addr
+      - PLAINTEXT://redpanda:28082,OUTSIDE://localhost:8082
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+      - "9092:9092"
+      - "28082:28082"
+      - "29092:29092"
+    networks:
+      - stock-net
+
+  stock-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: stock-1:latest
+    ports:
+      - "9090:9090"
+      - "3001:3001"
+    depends_on:
+      - redpanda
+      - redis
+    networks:
+      - stock-net
+    environment:
+      - GRPC_ADDRESS=0.0.0.0:9090
+      - HTTP_ADDRESS=0.0.0.0:3001
+      - REDPANDA_ADDRESS=redpanda:29092
+      - REDIS_ADDRESS=redis:6379
+      - REDIS_AUTH=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+
+networks:
+  stock-net:
+    driver: bridge
